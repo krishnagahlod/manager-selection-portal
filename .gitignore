@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# personal data — don't commit candidate CSVs
+*.csv
+Manager Responses*
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
