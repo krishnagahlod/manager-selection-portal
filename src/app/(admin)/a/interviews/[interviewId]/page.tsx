@@ -143,10 +143,10 @@ export default function InterviewPanelPage() {
       {/* Interview Status Control */}
       <Card className="mb-6 border-border/60">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex flex-col gap-3">
             <div className="text-sm">
-              <span className="text-muted-foreground mr-2">Status:</span>
-              <div className="inline-flex gap-1.5 mt-1">
+              <p className="text-muted-foreground text-xs font-medium mb-2">Status</p>
+              <div className="flex gap-1.5 flex-wrap">
                 {statusOptions.map((opt) => (
                   <button
                     key={opt.value}
@@ -163,7 +163,7 @@ export default function InterviewPanelPage() {
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-x-4 gap-y-1 text-xs text-muted-foreground flex-wrap pt-1 border-t">
               {interview.scheduled_at && (
                 <span>{new Date(interview.scheduled_at).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} at {new Date(interview.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
               )}
@@ -183,16 +183,16 @@ export default function InterviewPanelPage() {
               <CardTitle className="text-base flex items-center gap-2"><User className="w-4 h-4" />Candidate Profile</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><span className="text-muted-foreground">Email:</span> {candidate.email}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div className="truncate"><span className="text-muted-foreground">Email:</span> {candidate.email}</div>
                 {candidate.department && <div><span className="text-muted-foreground">Dept:</span> {candidate.department}</div>}
                 {candidate.year_of_study && <div><span className="text-muted-foreground">Year:</span> {candidate.year_of_study}</div>}
-                <div className="col-span-2 flex items-center gap-1">
+                <div className="sm:col-span-2 flex items-center gap-1 flex-wrap">
                   <span className="text-muted-foreground">Verticals:</span>
                   {verticals.map((v) => <VerticalBadge key={v} vertical={v} />)}
                 </div>
               </div>
-              <div className="flex items-center gap-4 mt-3">
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
                 <Badge variant="secondary">Attendance: {attendanceCount.attended}/{attendanceCount.total}</Badge>
                 <Badge variant="secondary">Submissions: {submissions.length}</Badge>
                 <Badge variant="secondary">Reflections: {logs.length}</Badge>
@@ -244,7 +244,7 @@ export default function InterviewPanelPage() {
 
         {/* Right: Evaluation Form */}
         <div>
-          <Card className="sticky top-6">
+          <Card className="lg:sticky lg:top-6">
             <CardHeader>
               <CardTitle className="text-base">Your Evaluation</CardTitle>
             </CardHeader>

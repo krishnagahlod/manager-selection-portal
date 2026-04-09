@@ -100,7 +100,10 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
     return '';
   };
 
-  const colClass = candidates.length === 2 ? 'grid-cols-2' : candidates.length === 3 ? 'grid-cols-3' : 'grid-cols-4';
+  // On mobile: single column stack. On md+: side-by-side.
+  const mdColClass =
+    candidates.length === 2 ? 'md:grid-cols-2' :
+    candidates.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-4';
 
   return (
     <div className="max-w-6xl">
@@ -116,7 +119,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         }
       />
 
-      <div className={`grid ${colClass} gap-4`}>
+      <div className={`grid grid-cols-1 ${mdColClass} gap-4`}>
         {candidates.map((c, i) => (
           <div key={c.id} className="space-y-4">
             {/* Profile */}

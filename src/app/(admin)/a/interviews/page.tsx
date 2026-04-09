@@ -164,7 +164,7 @@ export default function AdminInterviewsPage() {
                   <Label>Date & Time</Label>
                   <Input name="scheduled_at" type="datetime-local" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Duration (min)</Label>
                     <Input name="duration" type="number" defaultValue="60" />
@@ -195,10 +195,10 @@ export default function AdminInterviewsPage() {
         <div className="space-y-3">
           {interviews.map((interview) => (
             <Card key={interview.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="flex items-center justify-between p-4">
+              <CardContent className="flex items-center justify-between gap-2 p-4">
                 <Link href={`/a/interviews/${interview.id}`} className="flex-1 min-w-0 group">
-                  <p className="font-medium group-hover:text-primary transition-colors">{interview.candidate_name}</p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                  <p className="font-medium group-hover:text-primary transition-colors truncate">{interview.candidate_name}</p>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                     {interview.scheduled_at && (
                       <>
                         <span className="flex items-center gap-1">
@@ -257,7 +257,7 @@ export default function AdminInterviewsPage() {
                 defaultValue={editingInterview?.scheduled_at ? new Date(editingInterview.scheduled_at).toISOString().slice(0, 16) : ''}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Duration (min)</Label>
                 <Input name="edit_duration" type="number" defaultValue={editingInterview?.duration_min || 60} />

@@ -116,7 +116,7 @@ export default async function AdminDashboard() {
       <PageHeader title="Admin Dashboard" description="Consolidated view of all candidates" />
 
       {/* Summary Stats — gradient cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div className="rounded-xl p-4 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg">
           <Users className="w-6 h-6 mb-2 opacity-80" />
           <p className="text-3xl font-bold">{totalCandidates}</p>

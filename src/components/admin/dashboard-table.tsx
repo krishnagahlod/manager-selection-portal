@@ -116,28 +116,26 @@ export function DashboardTable({ rows }: { rows: DashboardRow[] }) {
   return (
     <Card className="shadow-card border-border/60">
       <CardHeader className="pb-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
           <CardTitle className="text-lg">All Candidates</CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or email..."
-                value={query}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-9 h-9 w-56 text-sm"
-              />
-              {query && (
-                <button onClick={() => handleSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+          <div className="relative w-full md:w-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or email..."
+              value={query}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-9 h-9 w-full md:w-56 text-sm"
+            />
+            {query && (
+              <button onClick={() => handleSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Vertical filter buttons */}
-        <div className="flex items-center gap-2 mt-3">
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
           <span className="text-xs text-muted-foreground font-medium">Filter:</span>
           {VERTICALS.map((v) => (
             <Button
@@ -155,7 +153,7 @@ export function DashboardTable({ rows }: { rows: DashboardRow[] }) {
               <X className="w-3 h-3 mr-1" />Clear
             </Button>
           )}
-          <span className="text-xs text-muted-foreground ml-auto">
+          <span className="text-xs text-muted-foreground ml-auto w-full sm:w-auto">
             {filteredRows.length} of {rows.length} candidates
           </span>
         </div>
