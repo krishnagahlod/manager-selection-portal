@@ -38,6 +38,7 @@ export default function NewSessionPage() {
       end_time: formData.get('end_time') as string,
       location: (formData.get('location') as string) || null,
       is_mandatory: formData.get('mandatory') === 'on',
+      recording_url: (formData.get('recording_url') as string) || null,
       created_by: user.id,
     };
 
@@ -103,6 +104,11 @@ export default function NewSessionPage() {
             <div className="flex items-center gap-2">
               <input type="checkbox" id="mandatory" name="mandatory" defaultChecked className="rounded" />
               <Label htmlFor="mandatory" className="font-normal">Mandatory session</Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="recording_url">Recording Link (optional)</Label>
+              <Input id="recording_url" name="recording_url" type="url" placeholder="https://..." />
+              <p className="text-xs text-muted-foreground">Add later via Edit if recording isn't ready yet.</p>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>

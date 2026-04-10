@@ -47,6 +47,7 @@ export interface GroundworkSession {
   location: string | null;
   is_mandatory: boolean;
   is_active: boolean;
+  recording_url: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

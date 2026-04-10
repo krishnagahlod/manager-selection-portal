@@ -54,10 +54,21 @@ export default async function AdminSessionDetailPage({ params }: { params: Promi
             <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{session.start_time?.slice(0, 5)} - {session.end_time?.slice(0, 5)}</span>
             {session.location && <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />{session.location}</span>}
           </div>
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-3 flex-wrap">
             {session.is_mandatory && <Badge variant="secondary">Mandatory</Badge>}
             <Badge variant={session.is_active ? 'default' : 'outline'}>{session.is_active ? 'Active' : 'Inactive'}</Badge>
           </div>
+          {session.recording_url && (
+            <a
+              href={session.recording_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-3"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Session Recording
+            </a>
+          )}
         </CardContent>
       </Card>
 

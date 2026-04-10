@@ -20,6 +20,7 @@ interface Props {
     end_time: string;
     location: string | null;
     is_mandatory: boolean;
+    recording_url: string | null;
   };
 }
 
@@ -45,6 +46,7 @@ export function EditSessionDialog({ session }: Props) {
       end_time: fd.get('end_time') as string,
       location: (fd.get('location') as string) || null,
       is_mandatory: fd.get('mandatory') === 'on',
+      recording_url: (fd.get('recording_url') as string) || null,
     }).eq('id', session.id);
 
     setSaving(false);
@@ -114,6 +116,10 @@ export function EditSessionDialog({ session }: Props) {
             <div className="flex items-center gap-2">
               <input type="checkbox" id="edit_mandatory" name="mandatory" defaultChecked={session.is_mandatory} className="rounded" />
               <Label htmlFor="edit_mandatory" className="font-normal">Mandatory session</Label>
+            </div>
+            <div className="space-y-2">
+              <Label>Recording Link</Label>
+              <Input name="recording_url" type="url" defaultValue={session.recording_url || ''} placeholder="https://..." />
             </div>
             <Button type="submit" className="w-full" disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
