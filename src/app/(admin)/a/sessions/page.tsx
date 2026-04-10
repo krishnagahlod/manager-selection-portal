@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Clock, MapPin, Plus, Users } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -18,16 +18,6 @@ export default async function AdminSessionsPage() {
     .from('groundwork_sessions')
     .select('*')
     .order('session_date', { ascending: false });
-
-  // Get attendance counts
-  const { data: attendanceCounts } = await supabase
-    .from('attendance')
-    .select('session_id');
-
-  const countMap = new Map<string, number>();
-  (attendanceCounts || []).forEach((a) => {
-    countMap.set(a.session_id, (countMap.get(a.session_id) || 0) + 1);
-  });
 
   return (
     <div className="max-w-4xl">
@@ -59,7 +49,7 @@ export default async function AdminSessionsPage() {
                 <CardContent className="flex items-center justify-between p-4">
                   <div className="min-w-0">
                     <p className="font-medium">{session.title}</p>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {new Date(session.session_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -71,10 +61,6 @@ export default async function AdminSessionsPage() {
                           {session.location}
                         </span>
                       )}
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        {countMap.get(session.id) || 0} attended
-                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
