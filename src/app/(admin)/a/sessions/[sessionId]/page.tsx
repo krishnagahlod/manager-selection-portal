@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, Clock, MapPin, MessageSquare, BookOpen } from 'lucide-react';
 import Link from 'next/link';
+import { EditSessionDialog } from '@/components/admin/edit-session-dialog';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,12 +33,15 @@ export default async function AdminSessionDetailPage({ params }: { params: Promi
       <PageHeader
         title={session.title}
         actions={
-          <Link href={`/a/sessions/${sessionId}/questions`}>
-            <Button variant="outline" className="gap-2">
-              <MessageSquare className="w-4 h-4" />
-              Moderate Q&A
-            </Button>
-          </Link>
+          <div className="flex gap-2 flex-wrap">
+            <EditSessionDialog session={session} />
+            <Link href={`/a/sessions/${sessionId}/questions`}>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5" />
+                Moderate Q&A
+              </Button>
+            </Link>
+          </div>
         }
       />
 

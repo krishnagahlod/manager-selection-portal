@@ -32,8 +32,9 @@ export default async function AssignmentsPage() {
       {myAssignments.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
-            <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No assignments available for your verticals yet.</p>
+            <FileText className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-sm font-medium">No assignments yet</p>
+            <p className="text-xs text-muted-foreground mt-1">Assignments for your verticals will appear here once posted by the OC team.</p>
           </CardContent>
         </Card>
       ) : (

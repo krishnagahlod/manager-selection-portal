@@ -212,6 +212,28 @@ export default async function CandidateDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Application Responses */}
+      {profile?.form_responses && Object.keys(profile.form_responses).length > 0 && (
+        <Card className="mt-6 shadow-card border-border/60">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                <BookOpen className="w-4 h-4 text-violet-600" />
+              </div>
+              Your Application
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {Object.entries(profile.form_responses as Record<string, string>).map(([key, value]) => (
+              <div key={key} className="text-sm">
+                <p className="font-medium text-muted-foreground capitalize text-xs">{key.replace(/_/g, ' ')}</p>
+                <p className="mt-0.5 leading-relaxed whitespace-pre-wrap">{value}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

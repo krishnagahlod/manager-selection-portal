@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { PageHeader } from '@/components/layout/page-header';
 import { Users, FileText, MessageSquare } from 'lucide-react';
 import { type Vertical } from '@/types/database';
-import { DashboardTable } from '@/components/admin/dashboard-table';
+import { DashboardTabs } from '@/components/admin/dashboard-tabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +30,7 @@ export default async function AdminDashboard() {
     supabase.from('assignment_evaluations').select('submission_id, creativity, practicality, effort'),
     supabase.from('interviews').select('candidate_id, status'),
     supabase.from('interview_evaluations').select('interview_id, final_score, interviews(candidate_id)'),
-    supabase.from('groundwork_logs').select('candidate_id'),
+    supabase.from('groundwork_logs').select('id, candidate_id, key_insight, key_learning, question, submitted_at, profiles(full_name, email), groundwork_sessions(title)'),
   ]);
 
   const totalAssignments = assignments?.length || 0;
@@ -117,8 +117,20 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      {/* Candidate Table — interactive filtering, sorting, search */}
-      <DashboardTable rows={rows} />
+      {/* Tabs: Candidates + Reflections */}
+      <DashboardTabs
+        rows={rows}
+        reflections={(allLogs || []).map((l: any) => ({
+          id: l.id,
+          candidate_name: l.profiles?.full_name || 'Unknown',
+          candidate_email: l.profiles?.email || '',
+          session_title: l.groundwork_sessions?.title || 'Unknown Session',
+          key_insight: l.key_insight,
+          key_learning: l.key_learning,
+          question: l.question,
+          submitted_at: l.submitted_at,
+        }))}
+      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { VerticalBadge } from '@/components/shared/vertical-badge';
 import { EvaluationForm } from '@/components/admin/evaluation-form';
 import { Clock, FileText, ExternalLink } from 'lucide-react';
+import { EditAssignmentDialog } from '@/components/admin/edit-assignment-dialog';
 import { type Vertical } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
@@ -16,19 +17,33 @@ export default async function AdminAssignmentDetailPage({ params }: { params: Pr
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const [{ data: assignment }, { data: submissions }] = await Promise.all([
+  const [{ data: assignment }, { data: submissions }, { data: verticalCandidates }] = await Promise.all([
     supabase.from('assignments').select('*').eq('id', assignmentId).single(),
     supabase.from('submissions')
       .select('*, profiles(full_name, email), assignment_evaluations(creativity, practicality, effort, comments, evaluator_id)')
       .eq('assignment_id', assignmentId)
       .order('submitted_at', { ascending: false }),
+    supabase.from('candidate_verticals')
+      .select('candidate_id, vertical, profiles(full_name, email)'),
   ]);
 
   if (!assignment) notFound();
 
+  // Find candidates in this assignment's vertical who haven't submitted
+  const candidatesInVertical = (verticalCandidates || []).filter(
+    (cv: any) => cv.vertical === assignment.vertical
+  );
+  const submittedCandidateIds = new Set((submissions || []).map((s: any) => s.candidate_id));
+  const missingCandidates = candidatesInVertical.filter(
+    (cv: any) => !submittedCandidateIds.has(cv.candidate_id)
+  );
+
   return (
     <div className="max-w-4xl">
-      <PageHeader title={assignment.title} />
+      <PageHeader
+        title={assignment.title}
+        actions={<EditAssignmentDialog assignment={assignment} />}
+      />
 
       <Card className="mb-6">
         <CardContent className="p-5">
@@ -102,6 +117,28 @@ export default async function AdminAssignmentDetailPage({ params }: { params: Pr
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Not Submitted */}
+      {missingCandidates.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold mb-3 text-destructive/80">Not Submitted ({missingCandidates.length})</h2>
+          <Card className="border-destructive/20">
+            <CardContent className="p-4">
+              <div className="space-y-2">
+                {missingCandidates.map((cv: any) => (
+                  <div key={cv.candidate_id} className="flex items-center justify-between p-2 rounded border border-border/60">
+                    <div>
+                      <p className="text-sm font-medium">{cv.profiles?.full_name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground">{cv.profiles?.email}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs text-destructive border-destructive/30">Missing</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

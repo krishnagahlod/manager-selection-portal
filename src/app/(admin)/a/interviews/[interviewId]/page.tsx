@@ -23,6 +23,7 @@ export default function InterviewPanelPage() {
   const [verticals, setVerticals] = useState<Vertical[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
+  const [allEvaluations, setAllEvaluations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Evaluation state
@@ -58,16 +59,19 @@ export default function InterviewPanelPage() {
         { data: subs },
         { data: logData },
         { data: existingEval },
+        { data: allEvalsData },
       ] = await Promise.all([
         supabase.from('candidate_verticals').select('vertical').eq('candidate_id', candidateId),
         supabase.from('submissions').select('*, assignments(title, vertical)').eq('candidate_id', candidateId),
         supabase.from('groundwork_logs').select('*, groundwork_sessions(title)').eq('candidate_id', candidateId),
         supabase.from('interview_evaluations').select('*').eq('interview_id', interviewId).eq('evaluator_id', user.id).maybeSingle(),
+        supabase.from('interview_evaluations').select('*, profiles(full_name)').eq('interview_id', interviewId),
       ]);
 
       setVerticals((verts || []).map((v) => v.vertical as Vertical));
       setSubmissions(subs || []);
       setLogs(logData || []);
+      setAllEvaluations(allEvalsData || []);
 
       if (existingEval) {
         setStrengths(existingEval.strengths || '');
@@ -235,8 +239,41 @@ export default function InterviewPanelPage() {
           )}
         </div>
 
-        {/* Right: Evaluation Form */}
-        <div>
+        {/* Right: Evaluations & Form */}
+        <div className="space-y-4">
+          {/* All Evaluators' Scores */}
+          {allEvaluations.length > 0 && (
+            <Card className="border-border/60">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">All Evaluator Scores ({allEvaluations.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {allEvaluations.map((ev: any) => (
+                    <div key={ev.id} className="flex items-center justify-between p-2 rounded-lg border text-sm">
+                      <span className="font-medium text-xs">{ev.profiles?.full_name || 'Evaluator'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold text-primary">{ev.final_score}</span>
+                        <span className="text-xs text-muted-foreground">/10</span>
+                      </div>
+                    </div>
+                  ))}
+                  {allEvaluations.length > 1 && (
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm font-medium">
+                      <span className="text-xs">Average</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold">
+                          {(allEvaluations.reduce((s: number, e: any) => s + e.final_score, 0) / allEvaluations.length).toFixed(1)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">/10</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="lg:sticky lg:top-6">
             <CardHeader>
               <CardTitle className="text-base">Your Evaluation</CardTitle>

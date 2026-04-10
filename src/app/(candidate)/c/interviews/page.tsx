@@ -41,10 +41,10 @@ export default async function InterviewsPage() {
       {!interviews || interviews.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
-            <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No interviews scheduled yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              You'll be notified when your interview is scheduled.
+            <Users className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-sm font-medium">No interviews scheduled yet</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+              Interviews are typically scheduled after groundwork sessions and assignment evaluations. You'll see the details here once your interview is set up.
             </p>
           </CardContent>
         </Card>

@@ -37,6 +37,15 @@ export default async function CandidateProfilePage({ params }: { params: Promise
 
   const verts = (verticals || []).map((v) => v.vertical as Vertical);
 
+  // Compute aggregate evaluation scores
+  const allEvals = (submissions || []).flatMap((s: any) => s.assignment_evaluations || []);
+  const evalCount = allEvals.length;
+  const avgCreativity = evalCount > 0 ? (allEvals.reduce((sum: number, e: any) => sum + e.creativity, 0) / evalCount) : null;
+  const avgPracticality = evalCount > 0 ? (allEvals.reduce((sum: number, e: any) => sum + e.practicality, 0) / evalCount) : null;
+  const avgEffort = evalCount > 0 ? (allEvals.reduce((sum: number, e: any) => sum + e.effort, 0) / evalCount) : null;
+  const avgOverall = avgCreativity !== null && avgPracticality !== null && avgEffort !== null
+    ? ((avgCreativity + avgPracticality + avgEffort) / 3) : null;
+
   return (
     <div className="max-w-4xl">
       <PageHeader title={profile.full_name || profile.email} />
@@ -78,6 +87,33 @@ export default async function CandidateProfilePage({ params }: { params: Promise
           <p className="text-xs text-muted-foreground">Individual GWs</p>
         </CardContent></Card>
       </div>
+
+      {/* Aggregate Evaluation Scores */}
+      {avgOverall !== null && (
+        <Card className="mb-6 border-primary/20 bg-primary/5">
+          <CardContent className="p-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Average Evaluation Scores ({evalCount} evaluations)</p>
+            <div className="grid grid-cols-4 gap-4 text-center">
+              <div>
+                <p className="text-xl font-bold text-primary">{avgCreativity!.toFixed(1)}</p>
+                <p className="text-xs text-muted-foreground">Creativity</p>
+              </div>
+              <div>
+                <p className="text-xl font-bold text-primary">{avgPracticality!.toFixed(1)}</p>
+                <p className="text-xs text-muted-foreground">Practicality</p>
+              </div>
+              <div>
+                <p className="text-xl font-bold text-primary">{avgEffort!.toFixed(1)}</p>
+                <p className="text-xs text-muted-foreground">Effort</p>
+              </div>
+              <div>
+                <p className="text-xl font-bold">{avgOverall.toFixed(1)}<span className="text-sm font-normal text-muted-foreground">/5</span></p>
+                <p className="text-xs text-muted-foreground">Overall</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Application Responses */}
       {profile.form_responses && Object.keys(profile.form_responses).length > 0 && (
