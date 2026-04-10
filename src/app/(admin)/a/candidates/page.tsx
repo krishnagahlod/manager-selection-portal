@@ -25,21 +25,9 @@ export default async function AdminCandidatesPage() {
     .from('candidate_verticals')
     .select('candidate_id, vertical');
 
-  const { data: allAttendance } = await supabase
-    .from('attendance')
-    .select('candidate_id');
-
   const { data: allSubmissions } = await supabase
     .from('submissions')
     .select('candidate_id');
-
-  const { data: mandatorySessions } = await supabase
-    .from('groundwork_sessions')
-    .select('id')
-    .eq('is_mandatory', true)
-    .eq('is_active', true);
-
-  const totalMandatory = mandatorySessions?.length || 0;
 
   // Build maps
   const verticalMap = new Map<string, Vertical[]>();
@@ -47,11 +35,6 @@ export default async function AdminCandidatesPage() {
     const arr = verticalMap.get(v.candidate_id) || [];
     arr.push(v.vertical as Vertical);
     verticalMap.set(v.candidate_id, arr);
-  });
-
-  const attCountMap = new Map<string, number>();
-  (allAttendance || []).forEach((a) => {
-    attCountMap.set(a.candidate_id, (attCountMap.get(a.candidate_id) || 0) + 1);
   });
 
   const subCountMap = new Map<string, number>();
@@ -77,15 +60,12 @@ export default async function AdminCandidatesPage() {
         <CandidateList
           candidates={(candidates || []).map((candidate) => {
             const verts = verticalMap.get(candidate.id) || [];
-            const attCount = attCountMap.get(candidate.id) || 0;
             const subCount = subCountMap.get(candidate.id) || 0;
-            const attPct = totalMandatory > 0 ? Math.round((attCount / totalMandatory) * 100) : 0;
             return {
               id: candidate.id,
               full_name: candidate.full_name || candidate.email,
               email: candidate.email,
               verticals: verts,
-              attPct,
               subCount,
             };
           })}

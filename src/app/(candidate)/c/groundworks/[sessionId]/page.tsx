@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import { PageHeader } from '@/components/layout/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Clock, MapPin, CheckCircle, QrCode, BookOpen } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, CheckCircle, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { QuestionSection } from '@/components/candidate/question-section';
 
@@ -16,18 +16,14 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const [{ data: session }, { data: attendance }, { data: log }] = await Promise.all([
+  const [{ data: session }, { data: log }] = await Promise.all([
     supabase.from('groundwork_sessions').select('*').eq('id', sessionId).single(),
-    supabase.from('attendance').select('id').eq('session_id', sessionId).eq('candidate_id', user.id).maybeSingle(),
     supabase.from('groundwork_logs').select('id').eq('session_id', sessionId).eq('candidate_id', user.id).maybeSingle(),
   ]);
 
   if (!session) notFound();
 
-  const attended = !!attendance;
   const hasLog = !!log;
-  const today = new Date().toISOString().split('T')[0];
-  const isPast = session.session_date < today;
 
   return (
     <div className="max-w-3xl">
@@ -54,38 +50,24 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-4">
-            {session.is_mandatory && <Badge variant="secondary">Mandatory</Badge>}
-            {attended ? (
-              <Badge className="bg-emerald-100 text-emerald-700">
-                <CheckCircle className="w-3 h-3 mr-1" />Attended
-              </Badge>
-            ) : (
-              <Badge variant="outline">Not attended</Badge>
-            )}
-          </div>
+          {session.is_mandatory && (
+            <div className="mt-4">
+              <Badge variant="secondary">Mandatory</Badge>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
+      {/* Reflection */}
       <div className="flex flex-wrap gap-3 mb-6">
-        {!attended && !isPast && (
-          <Link href={`/c/groundworks/${sessionId}/attend`}>
-            <Button className="gap-2">
-              <QrCode className="w-4 h-4" />
-              Mark Attendance
-            </Button>
-          </Link>
-        )}
-        {isPast && !hasLog && (
+        {!hasLog ? (
           <Link href={`/c/groundworks/${sessionId}/log`}>
             <Button variant="outline" className="gap-2">
               <BookOpen className="w-4 h-4" />
               Submit Reflection
             </Button>
           </Link>
-        )}
-        {hasLog && (
+        ) : (
           <Badge className="bg-emerald-100 text-emerald-700 text-xs">
             <CheckCircle className="w-3 h-3 mr-1" />Reflection submitted
           </Badge>

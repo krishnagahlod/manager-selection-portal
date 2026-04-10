@@ -12,7 +12,7 @@ import { Search, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
 import Link from 'next/link';
 import { type DashboardRow, type Vertical } from '@/types/database';
 
-type SortKey = 'name' | 'attPct' | 'subCount' | 'logCount' | 'intScore';
+type SortKey = 'name' | 'subCount' | 'logCount' | 'intScore';
 type SortDir = 'asc' | 'desc';
 
 export function DashboardTable({ rows }: { rows: DashboardRow[] }) {
@@ -21,8 +21,8 @@ export function DashboardTable({ rows }: { rows: DashboardRow[] }) {
 
   const initialQuery = searchParams.get('q') || '';
   const initialVertical = searchParams.get('v') || '';
-  const initialSort = (searchParams.get('sort') as SortKey) || 'attPct';
-  const initialDir = (searchParams.get('dir') as SortDir) || 'desc';
+  const initialSort = (searchParams.get('sort') as SortKey) || 'name';
+  const initialDir = (searchParams.get('dir') as SortDir) || 'asc';
 
   const [query, setQuery] = useState(initialQuery);
   const [verticalFilter, setVerticalFilter] = useState(initialVertical);
@@ -33,7 +33,7 @@ export function DashboardTable({ rows }: { rows: DashboardRow[] }) {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (v) params.set('v', v);
-    if (sort !== 'attPct' || dir !== 'desc') {
+    if (sort !== 'name' || dir !== 'asc') {
       params.set('sort', sort);
       params.set('dir', dir);
     }
@@ -82,7 +82,6 @@ export function DashboardTable({ rows }: { rows: DashboardRow[] }) {
 
       switch (sortKey) {
         case 'name': av = a.name.toLowerCase(); bv = b.name.toLowerCase(); break;
-        case 'attPct': av = a.attPct; bv = b.attPct; break;
         case 'subCount': av = a.subCount; bv = b.subCount; break;
         case 'logCount': av = a.logCount; bv = b.logCount; break;
         case 'intScore': av = a.intScore ?? -1; bv = b.intScore ?? -1; break;
@@ -178,7 +177,6 @@ export function DashboardTable({ rows }: { rows: DashboardRow[] }) {
                   </span>
                 </th>
                 <th className="pb-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Verticals</th>
-                <SortHeader label="Attendance" field="attPct" />
                 <SortHeader label="Submissions" field="subCount" />
                 <SortHeader label="Reflections" field="logCount" />
                 <th className="pb-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground text-center">Interview</th>
@@ -188,7 +186,7 @@ export function DashboardTable({ rows }: { rows: DashboardRow[] }) {
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
                     No candidates match your filters.
                   </td>
                 </tr>
@@ -207,15 +205,6 @@ export function DashboardTable({ rows }: { rows: DashboardRow[] }) {
                           <VerticalBadge key={v} vertical={v} />
                         ))}
                       </div>
-                    </td>
-                    <td className="py-3.5 text-center">
-                      <Badge className={
-                        row.attPct >= 75 ? 'bg-emerald-100 text-emerald-700' :
-                        row.attPct >= 50 ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-700'
-                      }>
-                        {row.attPct}%
-                      </Badge>
                     </td>
                     <td className="py-3.5 text-center font-medium">{row.subCount}</td>
                     <td className="py-3.5 text-center font-medium">{row.logCount}</td>

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { PageHeader } from '@/components/layout/page-header';
-import { Users, CalendarDays, FileText, MessageSquare } from 'lucide-react';
+import { Users, FileText, MessageSquare } from 'lucide-react';
 import { type Vertical } from '@/types/database';
 import { DashboardTable } from '@/components/admin/dashboard-table';
 
@@ -16,8 +16,6 @@ export default async function AdminDashboard() {
   const [
     { data: candidates },
     { data: allVerticals },
-    { data: sessions },
-    { data: allAttendance },
     { data: assignments },
     { data: allSubmissions },
     { data: allEvals },
@@ -27,8 +25,6 @@ export default async function AdminDashboard() {
   ] = await Promise.all([
     supabase.from('profiles').select('id, full_name, email').eq('role', 'candidate').eq('is_active', true).order('full_name'),
     supabase.from('candidate_verticals').select('candidate_id, vertical'),
-    supabase.from('groundwork_sessions').select('id, is_mandatory').eq('is_active', true),
-    supabase.from('attendance').select('candidate_id, session_id'),
     supabase.from('assignments').select('id, vertical').eq('is_active', true),
     supabase.from('submissions').select('candidate_id, assignment_id'),
     supabase.from('assignment_evaluations').select('submission_id, creativity, practicality, effort'),
@@ -37,8 +33,6 @@ export default async function AdminDashboard() {
     supabase.from('groundwork_logs').select('candidate_id'),
   ]);
 
-  const mandatorySessionIds = new Set((sessions || []).filter((s) => s.is_mandatory).map((s) => s.id));
-  const totalMandatory = mandatorySessionIds.size;
   const totalAssignments = assignments?.length || 0;
 
   // Build lookup maps
@@ -47,13 +41,6 @@ export default async function AdminDashboard() {
     const arr = verticalMap.get(v.candidate_id) || [];
     arr.push(v.vertical as Vertical);
     verticalMap.set(v.candidate_id, arr);
-  });
-
-  const attMap = new Map<string, Set<string>>();
-  (allAttendance || []).forEach((a) => {
-    const set = attMap.get(a.candidate_id) || new Set();
-    set.add(a.session_id);
-    attMap.set(a.candidate_id, set);
   });
 
   const subMap = new Map<string, Set<string>>();
@@ -83,8 +70,6 @@ export default async function AdminDashboard() {
   // Build candidate rows
   const rows = (candidates || []).map((c) => {
     const verts = verticalMap.get(c.id) || [];
-    const attendedMandatory = [...(attMap.get(c.id) || [])].filter((sid) => mandatorySessionIds.has(sid)).length;
-    const attPct = totalMandatory > 0 ? Math.round((attendedMandatory / totalMandatory) * 100) : 0;
     const subCount = subMap.get(c.id)?.size || 0;
     const logCount = logCountMap.get(c.id) || 0;
     const intStatus = interviewStatusMap.get(c.id) || 'not_scheduled';
@@ -95,7 +80,6 @@ export default async function AdminDashboard() {
       name: c.full_name || c.email,
       email: c.email,
       verticals: verts,
-      attPct,
       subCount,
       logCount,
       intStatus,
@@ -107,7 +91,6 @@ export default async function AdminDashboard() {
 
   // Overall stats
   const totalCandidates = candidates?.length || 0;
-  const avgAttendance = totalCandidates > 0 ? Math.round(rows.reduce((acc, r) => acc + r.attPct, 0) / totalCandidates) : 0;
   const totalSubmissions = allSubmissions?.length || 0;
   const completedInterviews = (interviews || []).filter((i) => i.status === 'completed').length;
 
@@ -116,16 +99,11 @@ export default async function AdminDashboard() {
       <PageHeader title="Admin Dashboard" description="Consolidated view of all candidates" />
 
       {/* Summary Stats — gradient cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div className="rounded-xl p-4 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg">
           <Users className="w-6 h-6 mb-2 opacity-80" />
           <p className="text-3xl font-bold">{totalCandidates}</p>
           <p className="text-xs text-white/70 mt-0.5">Total Candidates</p>
-        </div>
-        <div className="rounded-xl p-4 bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-lg">
-          <CalendarDays className="w-6 h-6 mb-2 opacity-80" />
-          <p className="text-3xl font-bold">{avgAttendance}%</p>
-          <p className="text-xs text-white/70 mt-0.5">Avg Attendance</p>
         </div>
         <div className="rounded-xl p-4 bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg">
           <FileText className="w-6 h-6 mb-2 opacity-80" />

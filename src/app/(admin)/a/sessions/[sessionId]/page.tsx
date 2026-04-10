@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Clock, MapPin, Users, QrCode, MessageSquare, BookOpen } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, MessageSquare, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -17,12 +17,10 @@ export default async function AdminSessionDetailPage({ params }: { params: Promi
 
   const [
     { data: session },
-    { data: attendance },
     { data: questions },
     { data: logs },
   ] = await Promise.all([
     supabase.from('groundwork_sessions').select('*').eq('id', sessionId).single(),
-    supabase.from('attendance').select('candidate_id, marked_at, profiles(full_name, email)').eq('session_id', sessionId),
     supabase.from('session_questions').select('*').eq('session_id', sessionId).order('created_at', { ascending: false }),
     supabase.from('groundwork_logs').select('*, profiles(full_name)').eq('session_id', sessionId),
   ]);
@@ -34,20 +32,12 @@ export default async function AdminSessionDetailPage({ params }: { params: Promi
       <PageHeader
         title={session.title}
         actions={
-          <div className="flex gap-2">
-            <Link href={`/a/sessions/${sessionId}/questions`}>
-              <Button variant="outline" className="gap-2">
-                <MessageSquare className="w-4 h-4" />
-                Moderate Q&A
-              </Button>
-            </Link>
-            <Link href={`/a/sessions/${sessionId}/attendance`}>
-              <Button className="gap-2">
-                <QrCode className="w-4 h-4" />
-                Take Attendance
-              </Button>
-            </Link>
-          </div>
+          <Link href={`/a/sessions/${sessionId}/questions`}>
+            <Button variant="outline" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Moderate Q&A
+            </Button>
+          </Link>
         }
       />
 
@@ -67,14 +57,7 @@ export default async function AdminSessionDetailPage({ params }: { params: Promi
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Users className="w-6 h-6 text-primary mx-auto mb-1" />
-            <p className="text-2xl font-bold">{attendance?.length || 0}</p>
-            <p className="text-xs text-muted-foreground">Attended</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card>
           <CardContent className="p-4 text-center">
             <MessageSquare className="w-6 h-6 text-primary mx-auto mb-1" />
@@ -90,32 +73,6 @@ export default async function AdminSessionDetailPage({ params }: { params: Promi
           </CardContent>
         </Card>
       </div>
-
-      {/* Attendance List */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Attendance ({attendance?.length || 0})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!attendance || attendance.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No one has attended yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {attendance.map((a: any) => (
-                <div key={a.candidate_id} className="flex items-center justify-between p-2 rounded border">
-                  <div>
-                    <p className="text-sm font-medium">{a.profiles?.full_name || 'Unknown'}</p>
-                    <p className="text-xs text-muted-foreground">{a.profiles?.email}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(a.marked_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Groundwork Logs */}
       {logs && logs.length > 0 && (

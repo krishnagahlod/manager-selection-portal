@@ -15,7 +15,6 @@ interface CandidateItem {
   full_name: string;
   email: string;
   verticals: Vertical[];
-  attPct: number;
   subCount: number;
 }
 
@@ -73,10 +72,6 @@ export function CandidateList({ candidates }: { candidates: CandidateItem[] }) {
 
                 {/* Quick stats */}
                 <div className="flex items-center gap-3 shrink-0 text-xs">
-                  <div className="text-center">
-                    <p className="font-semibold text-sm">{candidate.attPct}%</p>
-                    <p className="text-muted-foreground">Attendance</p>
-                  </div>
                   <div className="text-center">
                     <p className="font-semibold text-sm">{candidate.subCount}</p>
                     <p className="text-muted-foreground">Submissions</p>

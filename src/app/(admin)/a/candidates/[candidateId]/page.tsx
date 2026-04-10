@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { VerticalBadge } from '@/components/shared/vertical-badge';
-import { User, CalendarDays, FileText, BookOpen, MessageSquare, CheckCircle, XCircle, ClipboardList } from 'lucide-react';
+import { User, FileText, BookOpen, MessageSquare, ClipboardList } from 'lucide-react';
 import { type Vertical } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
@@ -18,8 +18,6 @@ export default async function CandidateProfilePage({ params }: { params: Promise
   const [
     { data: profile },
     { data: verticals },
-    { data: sessions },
-    { data: attendance },
     { data: submissions },
     { data: logs },
     { data: interview },
@@ -28,8 +26,6 @@ export default async function CandidateProfilePage({ params }: { params: Promise
   ] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', candidateId).single(),
     supabase.from('candidate_verticals').select('vertical').eq('candidate_id', candidateId),
-    supabase.from('groundwork_sessions').select('*').eq('is_active', true),
-    supabase.from('attendance').select('session_id, marked_at').eq('candidate_id', candidateId),
     supabase.from('submissions').select('*, assignments(title, vertical), assignment_evaluations(creativity, practicality, effort, comments, profiles(full_name))').eq('candidate_id', candidateId),
     supabase.from('groundwork_logs').select('*, groundwork_sessions(title)').eq('candidate_id', candidateId),
     supabase.from('interviews').select('*').eq('candidate_id', candidateId).maybeSingle(),
@@ -40,9 +36,6 @@ export default async function CandidateProfilePage({ params }: { params: Promise
   if (!profile) notFound();
 
   const verts = (verticals || []).map((v) => v.vertical as Vertical);
-  const attendedIds = new Set((attendance || []).map((a) => a.session_id));
-  const mandatorySessions = (sessions || []).filter((s) => s.is_mandatory);
-  const attendedMandatory = mandatorySessions.filter((s) => attendedIds.has(s.id)).length;
 
   return (
     <div className="max-w-4xl">
@@ -71,11 +64,7 @@ export default async function CandidateProfilePage({ params }: { params: Promise
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card><CardContent className="p-4 text-center">
-          <p className="text-2xl font-bold">{attendedMandatory}/{mandatorySessions.length}</p>
-          <p className="text-xs text-muted-foreground">Mandatory Attendance</p>
-        </CardContent></Card>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <Card><CardContent className="p-4 text-center">
           <p className="text-2xl font-bold">{submissions?.length || 0}</p>
           <p className="text-xs text-muted-foreground">Submissions</p>
@@ -108,28 +97,6 @@ export default async function CandidateProfilePage({ params }: { params: Promise
           </CardContent>
         </Card>
       )}
-
-      {/* Session Attendance */}
-      <Card className="mb-6">
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><CalendarDays className="w-4 h-4" />Session Attendance</CardTitle></CardHeader>
-        <CardContent>
-          <div className="space-y-1">
-            {(sessions || []).map((s) => (
-              <div key={s.id} className="flex items-center justify-between p-2 rounded border text-sm">
-                <div className="flex items-center gap-2">
-                  <span>{s.title}</span>
-                  {s.is_mandatory && <Badge variant="secondary" className="text-xs">Mandatory</Badge>}
-                </div>
-                {attendedIds.has(s.id) ? (
-                  <CheckCircle className="w-4 h-4 text-emerald-600" />
-                ) : (
-                  <XCircle className="w-4 h-4 text-red-400" />
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Submissions with Evaluations */}
       {submissions && submissions.length > 0 && (

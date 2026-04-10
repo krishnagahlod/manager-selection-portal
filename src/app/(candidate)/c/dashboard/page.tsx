@@ -1,13 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { PageHeader } from '@/components/layout/page-header';
 import { StatusCard } from '@/components/candidate/status-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { VerticalBadge } from '@/components/shared/vertical-badge';
 import { VERTICAL_LABELS } from '@/lib/constants';
 import {
-  CheckCircle,
   FileText,
   CalendarDays,
   BookOpen,
@@ -25,12 +23,10 @@ export default async function CandidateDashboard() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Fetch all data in parallel
   const [
     { data: profile },
     { data: verticals },
     { data: sessions },
-    { data: attendanceRecords },
     { data: assignments },
     { data: submissions },
     { data: interview },
@@ -39,7 +35,6 @@ export default async function CandidateDashboard() {
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('candidate_verticals').select('vertical').eq('candidate_id', user.id),
     supabase.from('groundwork_sessions').select('*').eq('is_active', true).order('session_date', { ascending: true }),
-    supabase.from('attendance').select('session_id').eq('candidate_id', user.id),
     supabase.from('assignments').select('*').eq('is_active', true).order('deadline', { ascending: true }),
     supabase.from('submissions').select('assignment_id').eq('candidate_id', user.id),
     supabase.from('interviews').select('*').eq('candidate_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
@@ -47,22 +42,17 @@ export default async function CandidateDashboard() {
   ]);
 
   const myVerticals = (verticals || []).map((v) => v.vertical as Vertical);
-  const attendedSessionIds = new Set((attendanceRecords || []).map((a) => a.session_id));
   const submittedAssignmentIds = new Set((submissions || []).map((s) => s.assignment_id));
   const loggedSessionIds = new Set((groundworkLogs || []).map((l) => l.session_id));
 
   const allSessions = sessions || [];
-  const mandatorySessions = allSessions.filter((s) => s.is_mandatory);
-  const attendedMandatory = mandatorySessions.filter((s) => attendedSessionIds.has(s.id)).length;
-
   const myAssignments = (assignments || []).filter((a) =>
     myVerticals.includes(a.vertical as Vertical)
   );
   const submittedCount = myAssignments.filter((a) => submittedAssignmentIds.has(a.id)).length;
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local timezone
   const upcomingSessions = allSessions.filter((s) => s.session_date >= today);
-  const pastSessions = allSessions.filter((s) => s.session_date < today);
 
   const interviewStatus = interview
     ? interview.status === 'scheduled'
@@ -84,7 +74,7 @@ export default async function CandidateDashboard() {
           </h1>
           <p className="text-white/70 mt-1 text-sm">Your selection process at a glance</p>
           {myVerticals.length > 0 && (
-            <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-center gap-2 mt-4 flex-wrap">
               {myVerticals.map((v) => (
                 <span key={v} className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white/15 text-xs font-medium text-white backdrop-blur-sm">
                   {VERTICAL_LABELS[v]}
@@ -96,14 +86,7 @@ export default async function CandidateDashboard() {
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatusCard
-          label="Attendance"
-          value={`${attendedMandatory}/${mandatorySessions.length}`}
-          subtext="mandatory sessions"
-          icon={CheckCircle}
-          color="emerald"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <StatusCard
           label="Assignments"
           value={`${submittedCount}/${myAssignments.length}`}
@@ -118,9 +101,9 @@ export default async function CandidateDashboard() {
           color={interview?.status === 'scheduled' ? 'amber' : 'emerald'}
         />
         <StatusCard
-          label="Groundwork Logs"
-          value={`${loggedSessionIds.size}/${pastSessions.length}`}
-          subtext="reflections submitted"
+          label="Reflections"
+          value={`${loggedSessionIds.size}/${allSessions.length}`}
+          subtext="submitted"
           icon={BookOpen}
           color="purple"
         />
@@ -141,45 +124,35 @@ export default async function CandidateDashboard() {
             <p className="text-sm text-muted-foreground">No upcoming sessions</p>
           ) : (
             <div className="space-y-3">
-              {upcomingSessions.map((session) => {
-                const attended = attendedSessionIds.has(session.id);
-                return (
-                  <Link
-                    key={session.id}
-                    href={`/c/groundworks/${session.id}`}
-                    className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 hover:shadow-card-hover hover:border-primary/20 transition-all duration-200"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">{session.title}</span>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+              {upcomingSessions.map((session) => (
+                <Link
+                  key={session.id}
+                  href={`/c/groundworks/${session.id}`}
+                  className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 hover:shadow-card-hover hover:border-primary/20 transition-all duration-200"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm">{session.title}</span>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                        <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          <span>
-                            {new Date(session.session_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                            {' '}{session.start_time?.slice(0, 5)}
+                          {new Date(session.session_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                          {' '}{session.start_time?.slice(0, 5)}
+                        </span>
+                        {session.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {session.location}
                           </span>
-                          {session.location && (
-                            <>
-                              <MapPin className="w-3 h-3 ml-1" />
-                              <span>{session.location}</span>
-                            </>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {session.is_mandatory && (
-                        <Badge variant="secondary" className="text-xs">Mandatory</Badge>
-                      )}
-                      {attended ? (
-                        <Badge className="bg-emerald-100 text-emerald-700 text-xs">Attended</Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">Pending</Badge>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
+                  </div>
+                  {session.is_mandatory && (
+                    <Badge variant="secondary" className="text-xs shrink-0">Mandatory</Badge>
+                  )}
+                </Link>
+              ))}
             </div>
           )}
         </CardContent>

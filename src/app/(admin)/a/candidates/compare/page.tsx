@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { VerticalBadge } from '@/components/shared/vertical-badge';
 import { Button } from '@/components/ui/button';
-import { User, CalendarDays, FileText, BookOpen, MessageSquare, ArrowLeft } from 'lucide-react';
+import { User, FileText, BookOpen, MessageSquare, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { type Vertical } from '@/types/database';
 import { cn } from '@/lib/utils';
@@ -19,9 +19,6 @@ interface CandidateData {
   department: string | null;
   year_of_study: number | null;
   verticals: Vertical[];
-  attPct: number;
-  attendedMandatory: number;
-  totalMandatory: number;
   subCount: number;
   logCount: number;
   intStatus: string;
@@ -43,8 +40,6 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   const [
     { data: profiles },
     { data: allVerticals },
-    { data: sessions },
-    { data: allAttendance },
     { data: allSubmissions },
     { data: allLogs },
     { data: interviews },
@@ -52,8 +47,6 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   ] = await Promise.all([
     supabase.from('profiles').select('*').in('id', candidateIds),
     supabase.from('candidate_verticals').select('candidate_id, vertical').in('candidate_id', candidateIds),
-    supabase.from('groundwork_sessions').select('id, is_mandatory').eq('is_active', true).eq('is_mandatory', true),
-    supabase.from('attendance').select('candidate_id, session_id').in('candidate_id', candidateIds),
     supabase.from('submissions').select('candidate_id').in('candidate_id', candidateIds),
     supabase.from('groundwork_logs').select('candidate_id').in('candidate_id', candidateIds),
     supabase.from('interviews').select('candidate_id, status').in('candidate_id', candidateIds),
@@ -62,13 +55,9 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
     ),
   ]);
 
-  const totalMandatory = sessions?.length || 0;
-
   const candidates: CandidateData[] = candidateIds.map((cid) => {
     const profile = (profiles || []).find((p) => p.id === cid);
     const verts = (allVerticals || []).filter((v) => v.candidate_id === cid).map((v) => v.vertical as Vertical);
-    const attCount = (allAttendance || []).filter((a) => a.candidate_id === cid).length;
-    const attPct = totalMandatory > 0 ? Math.round((attCount / totalMandatory) * 100) : 0;
     const subCount = (allSubmissions || []).filter((s) => s.candidate_id === cid).length;
     const logCount = (allLogs || []).filter((l) => l.candidate_id === cid).length;
     const interview = (interviews || []).find((i) => i.candidate_id === cid);
@@ -81,9 +70,6 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       department: profile?.department || null,
       year_of_study: profile?.year_of_study || null,
       verticals: verts,
-      attPct,
-      attendedMandatory: attCount,
-      totalMandatory,
       subCount,
       logCount,
       intStatus: interview?.status || 'not_scheduled',
@@ -136,15 +122,6 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                 <div className="flex gap-1 justify-center mt-2 flex-wrap">
                   {c.verticals.map((v) => <VerticalBadge key={v} vertical={v} />)}
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Attendance */}
-            <Card className="border-border/60">
-              <CardContent className={cn('p-4 text-center', bestClass(candidates.map((x) => x.attPct), i))}>
-                <CalendarDays className="w-5 h-5 mx-auto mb-1 opacity-60" />
-                <p className="text-2xl font-bold">{c.attPct}%</p>
-                <p className="text-xs text-muted-foreground">{c.attendedMandatory}/{c.totalMandatory} mandatory</p>
               </CardContent>
             </Card>
 

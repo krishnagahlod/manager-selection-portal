@@ -191,7 +191,6 @@ export interface DashboardRow {
   name: string;
   email: string;
   verticals: Vertical[];
-  attPct: number;
   subCount: number;
   logCount: number;
   intStatus: string;

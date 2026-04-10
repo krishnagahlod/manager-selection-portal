@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { VerticalBadge } from '@/components/shared/vertical-badge';
-import { Loader2, User, FileText, CalendarDays, BookOpen, CheckCircle } from 'lucide-react';
+import { Loader2, User, FileText, BookOpen, CheckCircle } from 'lucide-react';
 import { type Vertical } from '@/types/database';
 
 export default function InterviewPanelPage() {
@@ -21,7 +21,6 @@ export default function InterviewPanelPage() {
   const [interview, setInterview] = useState<any>(null);
   const [candidate, setCandidate] = useState<any>(null);
   const [verticals, setVerticals] = useState<Vertical[]>([]);
-  const [attendanceCount, setAttendanceCount] = useState({ attended: 0, total: 0 });
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,22 +55,17 @@ export default function InterviewPanelPage() {
 
       const [
         { data: verts },
-        { data: att },
-        { data: totalSessions },
         { data: subs },
         { data: logData },
         { data: existingEval },
       ] = await Promise.all([
         supabase.from('candidate_verticals').select('vertical').eq('candidate_id', candidateId),
-        supabase.from('attendance').select('id').eq('candidate_id', candidateId),
-        supabase.from('groundwork_sessions').select('id').eq('is_mandatory', true).eq('is_active', true),
         supabase.from('submissions').select('*, assignments(title, vertical)').eq('candidate_id', candidateId),
         supabase.from('groundwork_logs').select('*, groundwork_sessions(title)').eq('candidate_id', candidateId),
         supabase.from('interview_evaluations').select('*').eq('interview_id', interviewId).eq('evaluator_id', user.id).maybeSingle(),
       ]);
 
       setVerticals((verts || []).map((v) => v.vertical as Vertical));
-      setAttendanceCount({ attended: att?.length || 0, total: totalSessions?.length || 0 });
       setSubmissions(subs || []);
       setLogs(logData || []);
 
@@ -193,7 +187,6 @@ export default function InterviewPanelPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-3 flex-wrap">
-                <Badge variant="secondary">Attendance: {attendanceCount.attended}/{attendanceCount.total}</Badge>
                 <Badge variant="secondary">Submissions: {submissions.length}</Badge>
                 <Badge variant="secondary">Reflections: {logs.length}</Badge>
               </div>
