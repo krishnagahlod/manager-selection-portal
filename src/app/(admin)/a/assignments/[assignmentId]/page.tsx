@@ -7,6 +7,7 @@ import { VerticalBadge } from '@/components/shared/vertical-badge';
 import { EvaluationForm } from '@/components/admin/evaluation-form';
 import { Clock, FileText, ExternalLink } from 'lucide-react';
 import { EditAssignmentDialog } from '@/components/admin/edit-assignment-dialog';
+import { AssignmentQA } from '@/components/shared/assignment-qa';
 import { type Vertical } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
@@ -141,6 +142,11 @@ export default async function AdminAssignmentDetailPage({ params }: { params: Pr
           </Card>
         </div>
       )}
+
+      {/* Discussion Forum */}
+      <div className="mt-8">
+        <AssignmentQA assignmentId={assignmentId} isAdmin={true} />
+      </div>
     </div>
   );
 }

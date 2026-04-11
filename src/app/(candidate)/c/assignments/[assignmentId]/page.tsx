@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { VerticalBadge } from '@/components/shared/vertical-badge';
 import { Clock, Upload, CheckCircle, Loader2, FileText } from 'lucide-react';
 import { type Assignment, type Submission, type Vertical } from '@/types/database';
+import { AssignmentQA } from '@/components/shared/assignment-qa';
 
 export default function AssignmentDetailPage() {
   const params = useParams();
@@ -214,6 +215,11 @@ export default function AssignmentDetailPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Discussion Forum */}
+      <div className="mt-6">
+        <AssignmentQA assignmentId={assignmentId} isAdmin={false} />
+      </div>
     </div>
   );
 }
