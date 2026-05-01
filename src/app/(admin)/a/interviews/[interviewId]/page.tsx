@@ -11,8 +11,46 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { VerticalBadge } from '@/components/shared/vertical-badge';
-import { Loader2, User, FileText, BookOpen, CheckCircle } from 'lucide-react';
+import { Loader2, User, FileText, BookOpen, CheckCircle, Mic, ClipboardList, MessageCircle, Zap, Users } from 'lucide-react';
 import { type Vertical } from '@/types/database';
+
+interface InterviewSections {
+  intro_pitch: { pitch: string; motivation: string; score: number };
+  assignment: { q1: string; q2: string; initiative: string; score: number };
+  situations: { notes: string; score: number };
+  rapid_fire: { notes: string; score: number };
+  peer_review: { notes: string };
+}
+
+const EMPTY_SECTIONS: InterviewSections = {
+  intro_pitch: { pitch: '', motivation: '', score: 0 },
+  assignment: { q1: '', q2: '', initiative: '', score: 0 },
+  situations: { notes: '', score: 0 },
+  rapid_fire: { notes: '', score: 0 },
+  peer_review: { notes: '' },
+};
+
+function SectionScore({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-[10px] text-muted-foreground uppercase tracking-wider mr-1">Score</span>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange(n === value ? 0 : n)}
+          className={`w-7 h-7 rounded-md text-xs font-semibold transition-colors ${
+            n <= value
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:bg-accent'
+          }`}
+        >
+          {n}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function InterviewPanelPage() {
   const params = useParams();
@@ -36,6 +74,8 @@ export default function InterviewPanelPage() {
   const [submitted, setSubmitted] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>('scheduled');
   const [statusSaving, setStatusSaving] = useState(false);
+  const [sections, setSections] = useState<InterviewSections>(EMPTY_SECTIONS);
+  const [saveError, setSaveError] = useState('');
 
   const supabase = createClient();
 
@@ -83,6 +123,16 @@ export default function InterviewPanelPage() {
         setScore(existingEval.final_score);
         setEvalComments(existingEval.comments || '');
         setSubmitted(true);
+        // Merge stored sections with defaults to handle partial/missing data
+        if (existingEval.sections) {
+          setSections({
+            intro_pitch: { ...EMPTY_SECTIONS.intro_pitch, ...(existingEval.sections.intro_pitch || {}) },
+            assignment: { ...EMPTY_SECTIONS.assignment, ...(existingEval.sections.assignment || {}) },
+            situations: { ...EMPTY_SECTIONS.situations, ...(existingEval.sections.situations || {}) },
+            rapid_fire: { ...EMPTY_SECTIONS.rapid_fire, ...(existingEval.sections.rapid_fire || {}) },
+            peer_review: { ...EMPTY_SECTIONS.peer_review, ...(existingEval.sections.peer_review || {}) },
+          });
+        }
       }
 
       setLoading(false);
@@ -92,10 +142,15 @@ export default function InterviewPanelPage() {
 
   const handleSubmitEval = async () => {
     if (!score) return;
+    setSaveError('');
     setSubmitting(true);
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setSaveError('Not signed in.');
+      setSubmitting(false);
+      return;
+    }
 
     const payload = {
       interview_id: interviewId,
@@ -105,12 +160,17 @@ export default function InterviewPanelPage() {
       red_flags: redFlags.trim() || null,
       final_score: score,
       comments: evalComments.trim() || null,
+      sections,
     };
 
-    if (submitted) {
-      await supabase.from('interview_evaluations').update(payload).eq('interview_id', interviewId).eq('evaluator_id', user.id);
-    } else {
-      await supabase.from('interview_evaluations').insert(payload);
+    const result = submitted
+      ? await supabase.from('interview_evaluations').update(payload).eq('interview_id', interviewId).eq('evaluator_id', user.id)
+      : await supabase.from('interview_evaluations').insert(payload);
+
+    if (result.error) {
+      setSaveError(`Could not save: ${result.error.message}`);
+      setSubmitting(false);
+      return;
     }
 
     setSubmitted(true);
@@ -172,8 +232,8 @@ export default function InterviewPanelPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Candidate Info */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Left: Candidate Info — narrower */}
         <div className="lg:col-span-2 space-y-4">
           {/* Profile */}
           <Card>
@@ -239,8 +299,8 @@ export default function InterviewPanelPage() {
           )}
         </div>
 
-        {/* Right: Evaluations & Form */}
-        <div className="space-y-4">
+        {/* Right: Evaluations & Form — wider */}
+        <div className="lg:col-span-3 space-y-4">
           {/* All Evaluators' Scores */}
           {allEvaluations.length > 0 && (
             <Card className="border-border/60">
@@ -274,20 +334,184 @@ export default function InterviewPanelPage() {
             </Card>
           )}
 
-          <Card className="lg:sticky lg:top-6">
-            <CardHeader>
-              <CardTitle className="text-base">Your Evaluation</CardTitle>
+          {/* Section 1: Introduction & Pitch */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <Mic className="w-4 h-4 text-blue-600" />
+                  </div>
+                  1. Introduction & Pitch
+                </CardTitle>
+                <SectionScore
+                  value={sections.intro_pitch.score}
+                  onChange={(v) => setSections({ ...sections, intro_pitch: { ...sections.intro_pitch, score: v } })}
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Pitch — why should we select them as a manager / what do they bring?</Label>
+                <Textarea
+                  value={sections.intro_pitch.pitch}
+                  onChange={(e) => setSections({ ...sections, intro_pitch: { ...sections.intro_pitch, pitch: e.target.value } })}
+                  rows={3}
+                  placeholder="Notes on their pitch..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Motivation — why do they want to join the cell?</Label>
+                <Textarea
+                  value={sections.intro_pitch.motivation}
+                  onChange={(e) => setSections({ ...sections, intro_pitch: { ...sections.intro_pitch, motivation: e.target.value } })}
+                  rows={3}
+                  placeholder="Notes on their motivation..."
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 2: Assignment Discussion */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                    <ClipboardList className="w-4 h-4 text-violet-600" />
+                  </div>
+                  2. Assignment Discussion
+                </CardTitle>
+                <SectionScore
+                  value={sections.assignment.score}
+                  onChange={(v) => setSections({ ...sections, assignment: { ...sections.assignment, score: v } })}
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Question 1 (one of the 2 attempted)</Label>
+                <Textarea
+                  value={sections.assignment.q1}
+                  onChange={(e) => setSections({ ...sections, assignment: { ...sections.assignment, q1: e.target.value } })}
+                  rows={3}
+                  placeholder="Notes on their answer / discussion..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Question 2 (the other attempted)</Label>
+                <Textarea
+                  value={sections.assignment.q2}
+                  onChange={(e) => setSections({ ...sections, assignment: { ...sections.assignment, q2: e.target.value } })}
+                  rows={3}
+                  placeholder="Notes on their answer / discussion..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Proposed Initiative (their own idea)</Label>
+                <Textarea
+                  value={sections.assignment.initiative}
+                  onChange={(e) => setSections({ ...sections, assignment: { ...sections.assignment, initiative: e.target.value } })}
+                  rows={3}
+                  placeholder="Notes on their proposed initiative..."
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 3: Situation-Based Questions */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                    <MessageCircle className="w-4 h-4 text-amber-600" />
+                  </div>
+                  3. Situation-Based Questions
+                </CardTitle>
+                <SectionScore
+                  value={sections.situations.score}
+                  onChange={(v) => setSections({ ...sections, situations: { ...sections.situations, score: v } })}
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={sections.situations.notes}
+                onChange={(e) => setSections({ ...sections, situations: { ...sections.situations, notes: e.target.value } })}
+                rows={4}
+                placeholder="Situations asked + their responses + assessment..."
+              />
+            </CardContent>
+          </Card>
+
+          {/* Section 4: Rapid Fire */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center">
+                    <Zap className="w-4 h-4 text-red-600" />
+                  </div>
+                  4. Rapid Fire — Sustainability Knowledge
+                </CardTitle>
+                <SectionScore
+                  value={sections.rapid_fire.score}
+                  onChange={(v) => setSections({ ...sections, rapid_fire: { ...sections.rapid_fire, score: v } })}
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={sections.rapid_fire.notes}
+                onChange={(e) => setSections({ ...sections, rapid_fire: { ...sections.rapid_fire, notes: e.target.value } })}
+                rows={3}
+                placeholder="Terms tested + how well they answered..."
+              />
+            </CardContent>
+          </Card>
+
+          {/* Section 5: Peer Review (non-evaluative) */}
+          <Card className="border-border/60 bg-muted/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-indigo-600" />
+                </div>
+                5. Peer Review
+                <Badge variant="outline" className="text-[10px] ml-1">Non-evaluative</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={sections.peer_review.notes}
+                onChange={(e) => setSections({ ...sections, peer_review: { ...sections.peer_review, notes: e.target.value } })}
+                rows={4}
+                placeholder="What they shared about fellow candidates (general observations, not for evaluation but useful for selection)..."
+              />
+            </CardContent>
+          </Card>
+
+          {/* Final Assessment */}
+          <Card className="border-primary/30 bg-primary/[0.02]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-primary" />
+                </div>
+                Final Assessment
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm">Final Score (1-10) *</Label>
+                <Label className="text-sm font-semibold">Overall Score (1-10) *</Label>
                 <div className="flex gap-1 flex-wrap">
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                     <button
                       key={n}
                       type="button"
                       onClick={() => setScore(n)}
-                      className={`w-8 h-8 rounded-md text-sm font-medium transition-colors ${
+                      className={`w-9 h-9 rounded-md text-sm font-bold transition-colors ${
                         n <= score ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'
                       }`}
                     >
@@ -296,30 +520,37 @@ export default function InterviewPanelPage() {
                   ))}
                 </div>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Strengths</Label>
+                  <Textarea value={strengths} onChange={(e) => setStrengths(e.target.value)} rows={2} placeholder="Key strengths..." />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Weaknesses</Label>
+                  <Textarea value={weaknesses} onChange={(e) => setWeaknesses(e.target.value)} rows={2} placeholder="Areas of concern..." />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Red Flags</Label>
+                  <Textarea value={redFlags} onChange={(e) => setRedFlags(e.target.value)} rows={2} placeholder="Anything concerning..." />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Additional Comments</Label>
+                  <Textarea value={evalComments} onChange={(e) => setEvalComments(e.target.value)} rows={2} />
+                </div>
+              </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm">Strengths</Label>
-                <Textarea value={strengths} onChange={(e) => setStrengths(e.target.value)} rows={2} placeholder="Key strengths..." />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm">Weaknesses</Label>
-                <Textarea value={weaknesses} onChange={(e) => setWeaknesses(e.target.value)} rows={2} placeholder="Areas of concern..." />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm">Red Flags</Label>
-                <Textarea value={redFlags} onChange={(e) => setRedFlags(e.target.value)} rows={2} placeholder="Anything concerning..." />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm">Additional Comments</Label>
-                <Textarea value={evalComments} onChange={(e) => setEvalComments(e.target.value)} rows={2} />
-              </div>
+              {saveError && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2">
+                  <p className="text-sm text-destructive">{saveError}</p>
+                </div>
+              )}
 
-              <Button onClick={handleSubmitEval} className="w-full" disabled={submitting || !score}>
+              <Button onClick={handleSubmitEval} className="w-full" disabled={submitting || !score} size="lg">
                 {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                 {submitted ? 'Update Evaluation' : 'Submit Evaluation'}
               </Button>
 
-              {submitted && (
+              {submitted && !saveError && (
                 <p className="text-xs text-emerald-600 flex items-center gap-1 justify-center">
                   <CheckCircle className="w-3 h-3" />Evaluation saved
                 </p>
