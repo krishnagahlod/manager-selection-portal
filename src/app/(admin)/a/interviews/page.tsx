@@ -38,6 +38,8 @@ export default function AdminInterviewsPage() {
   const [shareMessage, setShareMessage] = useState('');
   const [sharePhone, setSharePhone] = useState<string | null>(null);
   const [shareCandidateName, setShareCandidateName] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [editError, setEditError] = useState('');
 
   const supabase = createClient();
 
@@ -61,18 +63,29 @@ export default function AdminInterviewsPage() {
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setCreateError('');
     setCreating(true);
 
     const formData = new FormData(e.currentTarget);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setCreateError('Not signed in.');
+      setCreating(false);
+      return;
+    }
 
     const scheduledAt = formData.get('scheduled_at') as string;
     const candidateId = formData.get('candidate_id') as string;
     const duration = parseInt(formData.get('duration') as string) || 60;
     const location = (formData.get('location') as string) || null;
 
-    await supabase.from('interviews').insert({
+    if (!candidateId) {
+      setCreateError('Please select a candidate.');
+      setCreating(false);
+      return;
+    }
+
+    const { error: insertError } = await supabase.from('interviews').insert({
       candidate_id: candidateId,
       scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       duration_min: duration,
@@ -80,6 +93,12 @@ export default function AdminInterviewsPage() {
       status: scheduledAt ? 'scheduled' : 'not_scheduled',
       created_by: user.id,
     });
+
+    if (insertError) {
+      setCreateError(`Could not schedule: ${insertError.message}`);
+      setCreating(false);
+      return;
+    }
 
     setDialogOpen(false);
     setCreating(false);
@@ -109,16 +128,24 @@ export default function AdminInterviewsPage() {
   const handleEditSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingInterview) return;
+    setEditError('');
     setEditSaving(true);
 
     const formData = new FormData(e.currentTarget);
     const scheduledAt = formData.get('edit_scheduled_at') as string;
 
-    await supabase.from('interviews').update({
+    const { error: updateError } = await supabase.from('interviews').update({
       scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       duration_min: parseInt(formData.get('edit_duration') as string) || 60,
       location: (formData.get('edit_location') as string) || null,
+      status: scheduledAt && editingInterview.status === 'not_scheduled' ? 'scheduled' : editingInterview.status,
     }).eq('id', editingInterview.id);
+
+    if (updateError) {
+      setEditError(`Could not update: ${updateError.message}`);
+      setEditSaving(false);
+      return;
+    }
 
     setEditDialogOpen(false);
     setEditingInterview(null);
@@ -174,6 +201,11 @@ export default function AdminInterviewsPage() {
                     <Input name="location" placeholder="e.g. SOM 101" />
                   </div>
                 </div>
+                {createError && (
+                  <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2">
+                    <p className="text-sm text-destructive">{createError}</p>
+                  </div>
+                )}
                 <Button type="submit" className="w-full" disabled={creating}>
                   {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Schedule
@@ -267,6 +299,11 @@ export default function AdminInterviewsPage() {
                 <Input name="edit_location" placeholder="e.g. SOM 101" defaultValue={editingInterview?.location || ''} />
               </div>
             </div>
+            {editError && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2">
+                <p className="text-sm text-destructive">{editError}</p>
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={editSaving}>
               {editSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Save Changes
