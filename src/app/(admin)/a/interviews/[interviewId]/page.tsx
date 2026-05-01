@@ -44,7 +44,7 @@ export default function InterviewPanelPage() {
 
       const { data: intData } = await supabase
         .from('interviews')
-        .select('*, profiles(full_name, email, department, year_of_study)')
+        .select('*, profiles!interviews_candidate_id_fkey(full_name, email, department, year_of_study)')
         .eq('id', interviewId)
         .single();
 

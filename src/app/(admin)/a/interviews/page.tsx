@@ -46,7 +46,7 @@ export default function AdminInterviewsPage() {
   useEffect(() => {
     async function load() {
       const [{ data: intData }, { data: candData }] = await Promise.all([
-        supabase.from('interviews').select('*, profiles(full_name, email)').order('scheduled_at', { ascending: true }),
+        supabase.from('interviews').select('*, profiles!interviews_candidate_id_fkey(full_name, email)').order('scheduled_at', { ascending: true }),
         supabase.from('profiles').select('id, full_name, email, phone').eq('role', 'candidate'),
       ]);
 
