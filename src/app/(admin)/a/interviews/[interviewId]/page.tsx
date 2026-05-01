@@ -34,6 +34,8 @@ export default function InterviewPanelPage() {
   const [evalComments, setEvalComments] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<string>('scheduled');
+  const [statusSaving, setStatusSaving] = useState(false);
 
   const supabase = createClient();
 
@@ -51,6 +53,7 @@ export default function InterviewPanelPage() {
       if (!intData) { setLoading(false); return; }
       setInterview(intData);
       setCandidate(intData.profiles);
+      setCurrentStatus(intData.status);
 
       const candidateId = intData.candidate_id;
 
@@ -114,6 +117,13 @@ export default function InterviewPanelPage() {
     setSubmitting(false);
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    setStatusSaving(true);
+    await supabase.from('interviews').update({ status: newStatus }).eq('id', interviewId);
+    setCurrentStatus(newStatus);
+    setStatusSaving(false);
+  };
+
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   if (!interview || !candidate) return <p className="text-center py-10 text-muted-foreground">Interview not found</p>;
 
@@ -123,16 +133,6 @@ export default function InterviewPanelPage() {
     { value: 'completed', label: 'Completed', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
     { value: 'cancelled', label: 'Cancelled', color: 'bg-red-100 text-red-700 border-red-200' },
   ];
-
-  const [currentStatus, setCurrentStatus] = useState(interview.status);
-  const [statusSaving, setStatusSaving] = useState(false);
-
-  const handleStatusChange = async (newStatus: string) => {
-    setStatusSaving(true);
-    await supabase.from('interviews').update({ status: newStatus }).eq('id', interviewId);
-    setCurrentStatus(newStatus);
-    setStatusSaving(false);
-  };
 
   return (
     <div className="max-w-4xl">
